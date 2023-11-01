@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Comparison</title>
+    
+    <style>
+        body {
+            font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            
+
+        }
+
+        /* Video container */
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Background video */
+        #background-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        label {
+            font-size: 16px;
+        }
+
+        input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #camera-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        video {
+            margin-top: 10px;
+            max-width: 100%;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        #imageUpload {
+            display: none;
+        }
+
+       
+        
+    </style>
+
+    <div id="video-container">
+        <video id="background-video" autoplay loop muted>
+            <source src="https://media.istockphoto.com/id/1354619989/video/metaverse-vr-virtual-reality-game-playing-man-and-woman-play-metaverse-virtual-digital.mp4?s=mp4-640x640-is&k=20&c=Vf2TL3aigWF1Ok4t-sS4CpyWDMxk-H0khCbLbqawXT4=" type="video/mp4">
+        </video>
+    </div>
+    <div class="background-overlay"></div>
+
+    <div class="container">
+        <label for="userIdInput">Enter User Identification Number:</label>
+        <input type="text" id="userIdInput">
+        <div id="camera-container">
+            <video id="video" autoplay></video>
+            <button id="captureButton">Capture Face</button>
+            <button id="retakeButton" style="display: none;">Retake</button>
+        </div>
+        <button id="verifyButton">Verify</button>
+        <input type="file" id="imageUpload" style="display: none;">
+        <button id="uploadButton" style="display: none;">Upload Image</button>
+        <canvas id="canvas" style="display: none;"></canvas>
+        <div id="result"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.0/firebase-storage.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmZTlSCwuPqjvlQXCmpQkFP__bMHaCwPo",
+            authDomain: "blockchain-bdf64.firebaseapp.com",
+            projectId: 'blockchain-bdf64',
+            storageBucket: 'blockchain-bdf64.appspot.com',
+            databaseURL: "https://blockchain-bdf64-default-rtdb.firebaseio.com",
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const video = document.getElementById('video');
+        const captureButton = document.getElementById('captureButton');
+        const retakeButton = document.getElementById('retakeButton');
+        const verifyButton = document.getElementById('verifyButton');
+        const resultDiv = document.getElementById('result');
+        const userIdInput = document.getElementById('userIdInput');
+        const canvas = document.getElementById('canvas');
+        const canvasContext = canvas.getContext('2d');
+        const imageUploadInput = document.getElementById('imageUpload');
+        const uploadButton = document.getElementById('uploadButton');
+
+        let videoStream; // Use a single variable for the video stream
+
+        // Initialize the camera
+        async function initializeCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = videoStream;
+            } catch (error) {
+                console.error('Error accessing the camera:', error);
+            }
+        }
+
+        // Call initializeCamera to access the camera
+        initializeCamera();
+
+        // Capture the user's face and display it
+        captureButton.addEventListener('click', captureFace);
+        retakeButton.addEventListener('click', retakeImage); // Add event listener for retake
+
+        async function captureFace() {
+            const uniqueId = userIdInput.value.trim();
+
+            if (!uniqueId) {
+                resultDiv.innerHTML = 'Please enter a unique ID';
+                return;
+            }
+
+            // Access the user's camera
+            try {
+                const videoElement = document.createElement('video');
+                videoElement.srcObject = videoStream; // Use the existing videoStream
+
+                // Wait for the video to load and play
+                await videoElement.play();
+
+                // Capture a frame from the video
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                canvasContext.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+                // Show the canvas element with the captured image
+                canvas.style.display = 'block';
+
+                // Show the capture button and hide the retake button
+                captureButton.style.display = 'none';
+                retakeButton.style.display = 'inline';
+            } catch (error) {
+                console.error('Error accessing the camera or capturing the image:', error);
+            }
+        }
+
+        // Function to handle retaking the image
+        function retakeImage() {
+            // Hide the canvas and result
+            canvas.style.display = 'none';
+            resultDiv.innerHTML = '';
+
+            // Show the capture button and hide the retake button
+            captureButton.style.display = 'inline';
+            retakeButton.style.display = 'none';
+        }
+
+        // Perform face comparison with image filenames in Firebase Storage
+        async function performImageComparison(uniqueId) {
+            try {
+                // List all items in the 'user_images' folder in Firebase Storage
+                const storageRef = firebase.storage().ref('user_images');
+                const imageList = await storageRef.list();
+
+                // Check if the entered uniqueId exists as a filename in the list
+                for (const item of imageList.items) {
+                    const filename = item.name;
+
+                    if (filename === `${uniqueId}.jpg` || filename === `${uniqueId}.JPG`) {
+                        return true; // Verified
+                    }
+                }
+
+                // If no match found, return false
+                return false;
+            } catch (error) {
+                console.error('Error during image comparison:', error);
+                return false; // Not verified (or error occurred)
+            }
+        }
+
+        // Add an event listener to the Verify button
+        verifyButton.addEventListener('click', verifyUser);
+
+        async function verifyUser() {
+            const uniqueId = userIdInput.value.trim();
+
+            if (!uniqueId) {
+                resultDiv.innerHTML = 'Please enter a unique ID';
+                return;
+            }
+
+            // Call the image comparison function with uniqueId
+            const isVerified = await performImageComparison(uniqueId);
+
+            if (isVerified) {
+                // Capture the image and upload it
+                captureFace();
+                // Now, call the uploadCapturedImage function and pass the uniqueId
+                uploadCapturedImage(uniqueId);
+            } else {
+                resultDiv.innerHTML = 'You are not verified';
+            }
+        }
+        async function uploadCapturedImage(uniqueId) {
+            try {
+                // Upload the captured image to Firebase Storage with the filename as the unique ID
+                const capturedImageBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg'));
+                const storage = firebase.storage();
+                const imageRef = storage.ref().child(`user_data/${uniqueId}.jpg`);
+                const uploadTask = imageRef.put(capturedImageBlob);
+
+                // After successfully uploading the image
+                uploadTask.then((snapshot) => {
+                    resultDiv.innerHTML = 'Image captured and stored successfully';
+
+                    // Add a button to move to the next page
+                    resultDiv.innerHTML += '<br><button id="nextButton" onclick="moveToNextPage()">Next</button>';
+                }).catch((error) => {
+                    console.error('Error uploading image:', error);
+                    resultDiv.innerHTML = 'Error occurred while uploading the image';
+                });
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                resultDiv.innerHTML = 'Error occurred while uploading the image';
+            }
+        }
+
+
+
+
+        function moveToNextPage() {
+            const uniqueId = userIdInput.value.trim();
+
+            if (!uniqueId) {
+                resultDiv.innerHTML = 'Please enter a unique ID';
+                return;
+            }
+
+            // Redirect to the next page with the uniqueId as a query parameter
+            window.location.href = `document_verification.html?uniqueId=${uniqueId}`;
+        }
+
+        // Function to open the file picker when the user clicks the Upload Image button
+        function openFilePicker() {
+            imageUploadInput.click();
+        }
+
+        // Add an event listener to the file input to trigger the file upload when a file is selected
+        imageUploadInput.addEventListener('change', handleImageUpload);
+
+        // Function to handle the selected image for upload
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+
+            if (file) {
+                const uniqueId = userIdInput.value.trim();
+
+                if (!uniqueId) {
+                    resultDiv.innerHTML = 'Please enter a unique ID';
+                    return;
+                }
+
+                // Reference the Firebase Storage folder where you want to upload the image
+                const storageRef = firebase.storage().ref(`user_data/${uniqueId}.jpg`);
+
+                // Upload the file to Firebase Storage
+                const uploadTask = storageRef.put(file);
+
+                // After successfully uploading the image
+                uploadTask.then((snapshot) => {
+                    resultDiv.innerHTML = 'Image uploaded successfully';
+
+                    // Add a button to move to the next page
+                    resultDiv.innerHTML += '<br><button id="nextButton" onclick="moveToNextPage()">Next</button>';
+                }).catch((error) => {
+                    console.error('Error uploading image:', error);
+                    resultDiv.innerHTML = 'Error occurred while uploading the image';
+                });
+            }
+        }
+    </script>
+</body>
+</html>

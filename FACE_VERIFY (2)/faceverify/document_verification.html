@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag and Drop File Upload</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/fontawesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+</head>
+<style>
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    }
+
+    .container {
+        background-color: rgba(0, 0, 0, 0.8);
+        border: 2px solid #007bff;
+        box-shadow: none;
+        text-align: center;
+        width: 100%;
+        max-width: 500px;
+        min-height: 435px;
+        margin: auto;
+        border-radius: 16px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px;
+    }
+
+    header {
+        background-color: transparent;
+    }
+
+    #passkey, #hashValue {
+        background-color: #222;
+        color: #fff;
+    }
+
+    button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        border: 2px solid #007bff;
+    }
+
+    #verificationResult {
+        color: whitesmoke;
+        font-size: 1.5rem;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .center-align {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-top: 20px;
+        font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .video {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: -1;
+    }
+
+    * {
+        font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    }
+
+    .container {
+        text-align: center;
+        width: 100%;
+        max-width: 500px;
+        min-height: 435px;
+        margin: auto;
+        background-color: white;
+        border-radius: 16px;
+        box-shadow: rgba(255, 255, 255, 0.1) 0px 1px 1px 0px inset, rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 1px solid #ccc;
+        padding: 20px;
+        font-size: 18px;
+    }
+
+    p {
+        margin: 5px;
+        font-size: large;
+        color: #707EA0;
+    }
+
+    .drop-section input {
+        display: none;
+    }
+
+    .container {
+        background-color: rgba(0, 0, 0, 0.8);
+        border: 2px solid #007bff;
+        box-shadow: none;
+    }
+
+    header {
+        background-color: transparent;
+    }
+
+    #passkey, #hashValue {
+        background-color: #222;
+        color: #fff;
+    }
+
+    button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        border: 2px solid #007bff;
+    }
+
+    #verificationResult {
+        color: whitesmoke;
+        font-size: 1.5rem;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .center-align {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+
+<body>
+    <video autoplay loop muted id="my_video">
+        <source src="laser_-_72364 (1080p).mp4" type="video/mp4">
+    </video>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Upload Files</h1>
+            <p>Upload files you want to share with the bank.</p>
+            <p>PDF, Images, Word, PNG are allowed.</p>
+        </div>
+        <br>
+        <center><h1>Document Verification</h1></center>
+        <br>
+        <label for="document">Select a Document:</label>
+        <input type="file" id="document">
+        <br>
+        <button onclick="generateHash()">Generate Hash</button>
+        <br>
+        <br>
+        <label for="hashValue">Hash Value:</label>
+        <input type="text" id="hashValue" readonly>
+        <br>
+        <br>
+        <button onclick="verifyDocument()">Verify Document</button>
+        <br>
+        <br>
+        <p id="verificationResult"></p>
+        <button id="applyForLoanButton" class="hidden">Apply for Loan</button>
+    </div>
+
+    <script>
+        // Your JavaScript code goes here
+         // Retrieve the uniqueId from the URL query parameters
+         const urlParams = new URLSearchParams(window.location.search);
+        const uniqueId = urlParams.get('uniqueId');
+
+        
+        if (!uniqueId) {
+            alert('No unique ID found in the URL.');
+        } else {
+            
+            console.log('Received Unique ID:', uniqueId);
+        }
+
+        
+        const passkeyHashPairs = {
+            '12345': '520947fcd0520a5dfebd78a2dddfbbff603cda7bbcd77862c3de1e1024f687d0',
+            'passkey2': 'hash2',
+            // Add more passkey-hash pairs as needed
+        };
+
+        async function calculateHash(data) {
+            const encoder = new TextEncoder();
+            const buffer = encoder.encode(data);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        
+        async function generateHash() {
+            const documentContent = document.getElementById('document').files[0];
+
+            if (!documentContent) {
+                alert('Please select a document.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function () {
+                const documentHash = await calculateHash(reader.result);
+                document.getElementById('hashValue').value = documentHash;
+            };
+
+            reader.readAsText(documentContent);
+        }
+
+        
+        async function verifyDocument() {
+        const documentHash = document.getElementById('hashValue').value;
+
+        const expectedHash = passkeyHashPairs[uniqueId];
+
+        console.log('Entered Document Hash:', documentHash);
+        console.log('Expected Document Hash:', expectedHash);
+
+        if (documentHash === expectedHash) {
+            console.log('Verification Successful');
+            document.getElementById('verificationResult').textContent = 'Document Verified! Data is correct.';
+            
+            // Make the new button visible
+            const applyForLoanButton = document.getElementById('applyForLoanButton');
+            applyForLoanButton.classList.remove('hidden');
+
+            // Add a click event listener to navigate to the next page
+            applyForLoanButton.addEventListener('click', function() {
+                // Redirect to the loan application page
+                window.location.href = 'loan_application.html?uniqueId=' + uniqueId;
+            });
+        } else {
+            console.log('Verification Failed');
+            document.getElementById('verificationResult').textContent = 'Document Verification Failed. Please check the document hash.';
+        }
+    }
+    </script>
+</body>
+</html>

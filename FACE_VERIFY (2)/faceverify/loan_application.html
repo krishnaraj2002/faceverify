@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Application</title>
+    <!-- Add your CSS stylesheets and other dependencies here -->
+    <style>
+        /* Your existing CSS styles */
+        body {
+            font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #f2f2f2;
+            font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+            border: 3px solid #007bff;
+            max-width: 400px; /* Adjust the maximum width as needed */
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="number"]:hover, input[type="text"]:hover {
+            border-color: #007bff;
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            min-width: 100%;
+            min-height: 100%;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <video autoplay loop muted>
+        <source src="https://cdn.pixabay.com/vimeo/365890983/circuit-27725.mp4?width=1280&hash=add45b508072175ba4147adf4a28e89e99177381" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <!-- Loan Application Section -->
+    <div class="container">
+        <img src="https://img.freepik.com/free-vector/personal-finance-concept-illustration_114360-5523.jpg?size=626&ext=jpg&uid=R64882490&ga=GA1.2.2012325925.1694419275&semt=sph" alt="Loan Image">
+        <!-- Loan Application Form -->
+        <form id="loanApplicationForm" onsubmit="event.preventDefault(); writeData();">
+            <h1>Loan Application</h1>
+            <label for="loanAmount">Loan Amount:</label><br>
+            <input type="text" id="loanAmount" required oninput="checkFields()"><br><br>
+            <label for="accountAddress">Account Address:</label>
+            <input type="text" id="accountAddress" required oninput="checkFields()">
+        </form>
+        
+        <!-- Submit Loan button inside the form, initially hidden -->
+        <button id="submitLoanButton" onclick="writeData()" class="hidden" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background-color 0.3s ease;">Apply for Loan</button>
+    </div>
+    
+    <!-- Include your Firebase scripts here -->
+    <script src="https://www.gstatic.com/firebasejs/8.8.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.0/firebase-database.js"></script>
+    
+    <script>
+        const firebaseConfig = {
+                apiKey: "AIzaSyDmZTlSCwuPqjvlQXCmpQkFP__bMHaCwPo",
+                authDomain: "blockchain-bdf64.firebaseapp.com",
+                projectId: 'blockchain-bdf64',
+                storageBucket: 'blockchain-bdf64.appspot.com',
+                databaseURL: "https://blockchain-bdf64-default-rtdb.firebaseio.com",
+            };
+            firebase.initializeApp(firebaseConfig);
+            const urlParams = new URLSearchParams(window.location.search);
+    const uniqueId = urlParams.get('uniqueId');
+
+    if (!uniqueId) {
+        alert('No unique ID found in the URL.');
+    } else {
+        console.log('Received Unique ID:', uniqueId);
+    }
+
+    function writeData() {
+    // Generate a unique ID for each loan application, for example, a timestamp
+    const timestamp = Date.now();
+
+    // Create a new reference with the unique ID
+    const loanApplicationRef = firebase.database().ref('LoanApplications').child(timestamp);
+
+    // Store the data under the unique ID
+    loanApplicationRef.set({
+        UserIdentificationNumber: uniqueId,
+        Amount: document.getElementById('loanAmount').value,
+        Account: document.getElementById('accountAddress').value,
+        Status: 'verified success'
+    });
+
+    alert('Successfully submitted');
+}
+
+
+    </script>
+
+    <script>
+        // Function to check the input fields and toggle the visibility of the submit button
+        function checkFields() {
+            const loanAmount = document.getElementById('loanAmount').value;
+            const accountAddress = document.getElementById('accountAddress').value;
+            const submitButton = document.getElementById('submitLoanButton');
+
+            if (loanAmount && accountAddress) {
+                submitButton.classList.remove('hidden'); // Show the submit button
+            } else {
+                submitButton.classList.add('hidden'); // Hide the submit button
+            }
+        }
+    </script>
+</body>
+</html>
